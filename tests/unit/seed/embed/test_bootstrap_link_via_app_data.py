@@ -203,7 +203,7 @@ def test_populated_read_only_cache_and_copied_app_data(tmp_path, current_fastest
 @pytest.mark.parametrize("pkg", ["pip", "setuptools", "wheel"])
 @pytest.mark.usefixtures("session_app_data", "current_fastest", "coverage_env")
 def test_base_bootstrap_link_via_app_data_no(tmp_path, pkg):
-    create_cmd = [str(tmp_path), "--seeder", "app-data", f"--no-{pkg}"]
+    create_cmd = [str(tmp_path), "--seeder", "app-data", f"--no-{pkg}", "--wheel", "bundle", "--setuptools", "bundle"]
     result = cli_run(create_cmd)
     assert not (result.creator.purelib / pkg).exists()
     for key in {"pip", "setuptools", "wheel"} - {pkg}:
@@ -231,7 +231,7 @@ def _run_parallel_threads(tmp_path):
 
     def _run(name):
         try:
-            cli_run(["--seeder", "app-data", str(tmp_path / name), "--no-pip", "--no-setuptools"])
+            cli_run(["--seeder", "app-data", str(tmp_path / name), "--no-pip", "--no-setuptools", "--wheel", "bundle"])
         except Exception as exception:
             as_str = str(exception)
             exceptions.append(as_str)

@@ -412,7 +412,19 @@ def test_create_long_path(tmp_path):
 @pytest.mark.parametrize("creator", sorted(set(PythonInfo.current_system().creators().key_to_class) - {"builtin"}))
 @pytest.mark.usefixtures("session_app_data")
 def test_create_distutils_cfg(creator, tmp_path, monkeypatch):
-    result = cli_run([str(tmp_path / "venv"), "--activators", "", "--creator", creator])
+    result = cli_run(
+        [
+            str(tmp_path / "venv"),
+            "--activators",
+            "",
+            "--creator",
+            creator,
+            "--setuptools",
+            "bundle",
+            "--wheel",
+            "bundle",
+        ],
+    )
 
     app = Path(__file__).parent / "console_app"
     dest = tmp_path / "console_app"
@@ -465,7 +477,9 @@ def list_files(path):
 
 def test_zip_importer_can_import_setuptools(tmp_path):
     """We're patching the loaders so might fail on r/o loaders, such as zipimporter on CPython<3.8"""
-    result = cli_run([str(tmp_path / "venv"), "--activators", "", "--no-pip", "--no-wheel", "--copies"])
+    result = cli_run(
+        [str(tmp_path / "venv"), "--activators", "", "--no-pip", "--no-wheel", "--copies", "--setuptools", "bundle"],
+    )
     zip_path = tmp_path / "site-packages.zip"
     with zipfile.ZipFile(str(zip_path), "w", zipfile.ZIP_DEFLATED) as zip_handler:
         lib = str(result.creator.purelib)
@@ -499,6 +513,7 @@ def test_no_preimport_threading(tmp_path):
     out = subprocess.check_output(
         [str(session.creator.exe), "-c", r"import sys; print('\n'.join(sorted(sys.modules)))"],
         text=True,
+        encoding="utf-8",
     )
     imported = set(out.splitlines())
     assert "threading" not in imported
@@ -515,6 +530,7 @@ def test_pth_in_site_vs_python_path(tmp_path):
     out = subprocess.check_output(
         [str(session.creator.exe), "-c", r"import sys; print(sys.testpth)"],
         text=True,
+        encoding="utf-8",
     )
     assert out == "ok\n"
     # same with $PYTHONPATH pointing to site_packages
@@ -527,6 +543,7 @@ def test_pth_in_site_vs_python_path(tmp_path):
         [str(session.creator.exe), "-c", r"import sys; print(sys.testpth)"],
         text=True,
         env=env,
+        encoding="utf-8",
     )
     assert out == "ok\n"
 
@@ -540,6 +557,7 @@ def test_getsitepackages_system_site(tmp_path):
     out = subprocess.check_output(
         [str(session.creator.exe), "-c", r"import site; print(site.getsitepackages())"],
         text=True,
+        encoding="utf-8",
     )
     site_packages = ast.literal_eval(out)
 
@@ -554,6 +572,7 @@ def test_getsitepackages_system_site(tmp_path):
     out = subprocess.check_output(
         [str(session.creator.exe), "-c", r"import site; print(site.getsitepackages())"],
         text=True,
+        encoding="utf-8",
     )
     site_packages = [str(Path(i).resolve()) for i in ast.literal_eval(out)]
 
@@ -579,6 +598,7 @@ def test_get_site_packages(tmp_path):
     out = subprocess.check_output(
         [str(session.creator.exe), "-c", r"import site; print(site.getsitepackages())"],
         text=True,
+        encoding="utf-8",
     )
     site_packages = ast.literal_eval(out)
 
@@ -617,7 +637,7 @@ def test_python_path(monkeypatch, tmp_path, python_path_on):
         if flag:
             cmd.append(flag)
         cmd.extend(["-c", "import json; import sys; print(json.dumps(sys.path))"])
-        return [i if case_sensitive else i.lower() for i in json.loads(subprocess.check_output(cmd))]
+        return [i if case_sensitive else i.lower() for i in json.loads(subprocess.check_output(cmd, encoding="utf-8"))]
 
     monkeypatch.delenv("PYTHONPATH", raising=False)
     base = _get_sys_path()

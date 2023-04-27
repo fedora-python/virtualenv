@@ -66,7 +66,7 @@ def test_manual_upgrade(session_app_data, caplog, mocker, for_py_version):
 
 @pytest.mark.usefixtures("session_app_data")
 def test_pick_periodic_update(tmp_path, mocker, for_py_version):
-    embed, current = get_embed_wheel("setuptools", "3.5"), get_embed_wheel("setuptools", for_py_version)
+    embed, current = get_embed_wheel("setuptools", "3.6"), get_embed_wheel("setuptools", for_py_version)
     mocker.patch("virtualenv.seed.wheels.bundle.load_embed_wheel", return_value=embed)
     completed = datetime.now() - timedelta(days=29)
     u_log = UpdateLog(
@@ -77,7 +77,20 @@ def test_pick_periodic_update(tmp_path, mocker, for_py_version):
     )
     read_dict = mocker.patch("virtualenv.app_data.via_disk_folder.JSONStoreDisk.read", return_value=u_log.to_dict())
 
-    result = cli_run([str(tmp_path), "--activators", "", "--no-periodic-update", "--no-wheel", "--no-pip"])
+    result = cli_run(
+        [
+            str(tmp_path),
+            "--activators",
+            "",
+            "--no-periodic-update",
+            "--no-wheel",
+            "--no-pip",
+            "--setuptools",
+            "bundle",
+            "--wheel",
+            "bundle",
+        ],
+    )
 
     assert read_dict.call_count == 1
     installed = [i.name for i in result.creator.purelib.iterdir() if i.suffix == ".dist-info"]
